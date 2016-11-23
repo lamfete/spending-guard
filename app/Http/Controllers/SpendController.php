@@ -9,8 +9,9 @@ use App\Http\Controllers\Controller;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuthExceptions\JWTException;
 use App\SpendHeader as SpendHeader;
-use App\SpendDetail;
+use App\SpendDetail as SpendDetail;
 use App\User;
+use Response;
 
 
 class SpendController extends Controller
@@ -26,7 +27,39 @@ class SpendController extends Controller
 
     public function show($id) {
         $spendHeaders = SpendHeader::where('user_id', $id)->get();
-        return $spendHeaders;
+
+        if(!$spendHeaders) {
+            return Response::json([
+                'error' => [
+                    'message' => 'Spend Header does not exist'
+                ]
+            ], 404);
+        }
+
+        //return $spendHeaders;
+        return Response::json([
+            'data' => $this->transformCollectionSpendHeader($spendHeaders)
+        ], 200);
+    }
+
+    private function transformCollectionSpendHeader($spendHeaders) {
+        return array_map([$this, 'transformSpendHeader'], $spendHeaders->toArray());
+    }
+
+    private function transformSpendHeader($spendHeader) {
+        //$SpendDetails = SpendDetail::where('spend_header_id', $spendHeader['id']->get());
+
+        return [
+            'spend_header_id' => $spendHeader['id'],
+            'spend_header_subtotal' => $spendHeader['subtotal'],
+            'spend_header_date' => $spendHeader['created_at'],
+            'spend_details_data' => $this->transformSpendDetails($spendHeader['id'])
+        ];
+    }
+
+    private function transformSpendDetails($spendHeaderId) {
+        $SpendDetails = SpendDetail::where('spend_header_id', $spendHeaderId)->get();  
+        return $SpendDetails;      
     }
 
     /*
