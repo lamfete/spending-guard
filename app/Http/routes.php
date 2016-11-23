@@ -18,4 +18,8 @@ Route::get('/', function () {
 Route::group(['prefix' => 'api'], function() {
 	Route::resource('authenticate', 'AuthenticateController', ['only' => ['index']]);
 	Route::post('authenticate', 'AuthenticateController@authenticate');
+	Route::post('spend', 'AuthenticateController@authenticate');
+	
+	Route::resource('spend', 'SpendController');
+	//Route::post('spend', 'SpendController@authenticate');
 });
