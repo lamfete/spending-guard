@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateSpendDetailsTable extends Migration
+class CreateSpendHeadersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -12,11 +12,10 @@ class CreateSpendDetailsTable extends Migration
      */
     public function up()
     {
-        Schema::create('spend_details', function($table) {
+        Schema::create('spend_headers', function($table) {
             $table->increments('id');
             $table->integer('user_id');
-            $table->integer('category_id');
-            $table->double('amount', 15, 8);
+            $table->double('subtotal', 15, 8);
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ class CreateSpendDetailsTable extends Migration
      */
     public function down()
     {
-        Schema::drop('spend_details');
+        Schema::drop('spend_headers');
     }
 }

@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class SpendHeader extends Model
 {
+	/*protected $fillable = ['user_id', 'subtotal'];
     public function details() {
     	return $this->hasMany('App\SpendDetail');
-    }
+    }*/
 }

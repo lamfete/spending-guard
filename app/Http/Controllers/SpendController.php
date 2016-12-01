@@ -10,8 +10,10 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuthExceptions\JWTException;
 use App\SpendHeader as SpendHeader;
 use App\SpendDetail as SpendDetail;
+use App\Category as Category;
 use App\User;
 use Response;
+use DB;
 
 
 class SpendController extends Controller
@@ -26,24 +28,70 @@ class SpendController extends Controller
     }
 
     public function show($id) {
-        $spendHeaders = SpendHeader::where('user_id', $id)->get();
+        //$spendHeaders = SpendHeader::where('user_id', $id)->get();
+        $spendDetails = SpendDetail::where('user_id', $id)->get();
 
-        if(!$spendHeaders) {
+        if(!$spendDetails) {
             return Response::json([
                 'error' => [
-                    'message' => 'Spend Header does not exist'
+                    'message' => 'Spend detail does not exist'
                 ]
             ], 404);
         }
 
         //return $spendHeaders;
         return Response::json([
-            'data' => $this->transformCollectionSpendHeader($spendHeaders)
+            'data' => $this->transformCollectionSpendDetail($spendDetails)
         ], 200);
     }
 
-    private function transformCollectionSpendHeader($spendHeaders) {
-        return array_map([$this, 'transformSpendHeader'], $spendHeaders->toArray());
+    public function store(Request $request) {
+        if(!$request->category_id or !$request->amount) {
+            return Response::json([
+                'error' => [
+                    'message' => 'Please provide data correctly'
+                ]
+            ], 422);
+        }
+
+        $spendDetail = SpendDetail::create($request->all());
+
+        $dateOnly = \Carbon\Carbon::now();
+
+        //update spend_headers subtotal
+        DB::table('spend_headers')
+                    ->where('user_id', $request->user_id)
+                    ->where(DB::raw('DATE(`updated_at`)'), $dateOnly->toDateString())
+                    ->increment('subtotal', $request->amount);
+
+        return Response::json([
+            'message' => "Data created successfully",
+            'data' => $this->transformSpendDetail($spendDetail)
+        ]);
+    }
+
+    private function transformCollectionSpendDetail($spendDetails) {
+        return array_map([$this, 'transformSpendDetail'], $spendDetails->toArray());
+    }
+
+    private function transformSpendDetail($spendDetail) {
+        $categoryName = $this->getCategoryName($spendDetail['category_id']);
+
+        return [
+            'spend_category_id' => $spendDetail['category_id'],
+            'spend_category_name' => $categoryName['name'],
+            'spend_amount' => $spendDetail['amount']
+        ];
+        //return $categoryName[0]['name'];
+    }
+
+    private function transformCollectionCategory($categories) {
+        return array_map([$this, 'transformCategory'], $categories->toArray());
+    }
+
+    private function getCategoryName($categoryId) {
+        $category = Category::where('id', $categoryId)->get();
+        return $category[0];
     }
 
     private function transformSpendHeader($spendHeader) {
@@ -58,7 +106,7 @@ class SpendController extends Controller
     }
 
     private function transformSpendDetails($spendHeaderId) {
-        $SpendDetails = SpendDetail::where('spend_header_id', $spendHeaderId)->get();  
+        $SpendDetails = SpendDetail::where('user_id', $spendHeaderId)->get();  
         return $SpendDetails;      
     }
 

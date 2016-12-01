@@ -16,13 +16,13 @@ class SpendDetailsTableSeeder extends Seeder
         DB::table('spend_details')->delete();
 
         $spend_details = array(
-        	['spend_header_id' => 1, 'category_id' => 1, 'amount' => 5000],
-        	['spend_header_id' => 1, 'category_id' => 11, 'amount' => 1000],
-        	['spend_header_id' => 1, 'category_id' => 9, 'amount' => 2000],
-        	['spend_header_id' => 1, 'category_id' => 6, 'amount' => 2000],
-        	['spend_header_id' => 2, 'category_id' => 1, 'amount' => 10000],
-        	['spend_header_id' => 2, 'category_id' => 2, 'amount' => 10000],
-        	['spend_header_id' => 3, 'category_id' => 1, 'amount' => 8000]
+        	['user_id' => 1, 'category_id' => 1, 'amount' => 5000],
+        	['user_id' => 1, 'category_id' => 11, 'amount' => 1000],
+        	['user_id' => 1, 'category_id' => 9, 'amount' => 2000],
+        	['user_id' => 1, 'category_id' => 6, 'amount' => 2000],
+        	['user_id' => 2, 'category_id' => 1, 'amount' => 10000],
+        	['user_id' => 2, 'category_id' => 2, 'amount' => 10000],
+        	['user_id' => 3, 'category_id' => 1, 'amount' => 8000]
         );
 
         foreach ($spend_details as $spend_detail) {

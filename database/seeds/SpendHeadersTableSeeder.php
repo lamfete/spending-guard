@@ -16,8 +16,8 @@ class SpendHeadersTableSeeder extends Seeder
 
         $spend_headers = array(
         	['user_id' => 1, 'subtotal' => 10000],
-        	['user_id' => 1, 'subtotal' => 20000],
-        	['user_id' => 2, 'subtotal' => 8000]
+        	['user_id' => 2, 'subtotal' => 20000],
+        	['user_id' => 3, 'subtotal' => 8000]
         );
 
         foreach ($spend_headers as $spend_header) {

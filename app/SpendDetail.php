@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class SpendDetail extends Model
 {
-    public function header() {
+    /*public function header() {
     	return $this->belongsTo('App\SpendHeader');
-    }
+    }*/
+    protected $fillable = [
+        'user_id', 'category_id', 'amount',
+    ];
 }
