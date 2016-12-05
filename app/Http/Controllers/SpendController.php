@@ -46,7 +46,7 @@ class SpendController extends Controller
     }
 
     public function store(Request $request) {
-        if(!$request->category_id or !$request->amount) {
+        if(!$request->category_id or !$request->amount or !$request->date) {
             return Response::json([
                 'error' => [
                     'message' => 'Please provide data correctly'
@@ -61,12 +61,95 @@ class SpendController extends Controller
         //update spend_headers subtotal
         DB::table('spend_headers')
                     ->where('user_id', $request->user_id)
-                    ->where(DB::raw('DATE(`updated_at`)'), $dateOnly->toDateString())
-                    ->increment('subtotal', $request->amount);
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
+                    /*->update([
+                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
+                        'updated_at' => $dateOnly
+                    ])*/
+                    ->increment('subtotal', $request->amount, ['updated_at' => \Carbon\Carbon::now()]);
 
         return Response::json([
             'message' => "Data created successfully",
             'data' => $this->transformSpendDetail($spendDetail)
+        ]);
+    }
+
+    public function update(Request $request, $id) {
+        if(!$request->category_id or !$request->amount or !$request->date) {
+            return Response::json([
+                'error' => [
+                    'message' => 'Please provide data correctly'
+                ]
+            ], 422);
+        }
+
+        $spendDetail = SpendDetail::find($id);
+        
+        /*
+        * get amount first, then substract from the subtotal
+        * update spend_headers
+        *
+        */
+        $amountDecrement = $spendDetail->amount;
+
+        //update spend_headers subtotal
+        DB::table('spend_headers')
+                    ->where('user_id', $request->user_id)
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
+                    /*->update([
+                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
+                        'updated_at' => $dateOnly
+                    ])*/
+                    ->decrement('subtotal', $amountDecrement);
+
+        /*
+        * update amount in spend_details
+        * update subtotal in spend_headers with updated amount
+        *
+        */        
+        $spendDetail->amount = $request->amount;
+        $spendDetail->category_id = $request->category_id;
+        $spendDetail->save();
+
+        //update spend_headers subtotal
+        DB::table('spend_headers')
+                    ->where('user_id', $request->user_id)
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
+                    /*->update([
+                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
+                        'updated_at' => $dateOnly
+                    ])*/
+                    ->increment('subtotal', $request->amount, ['updated_at' => \Carbon\Carbon::now()]);
+
+        return Response::json([
+            'message' => 'Spend Detail updated successfully'
+        ]);
+    }
+
+    public function destroy(Request $request, $id) {
+        $spendDetail = SpendDetail::find($id);
+        
+        /*
+        * get amount first, then substract from the subtotal
+        * update spend_headers
+        *
+        */
+        $amountDecrement = $spendDetail->amount;
+
+        //update spend_headers subtotal
+        DB::table('spend_headers')
+                    ->where('user_id', $request->user_id)
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
+                    /*->update([
+                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
+                        'updated_at' => $dateOnly
+                    ])*/
+                    ->decrement('subtotal', $amountDecrement, ['updated_at' => \Carbon\Carbon::now()]);
+
+        spendDetail::destroy($id);
+
+        return Response::json([
+            'message' => 'Spend Detail deleted successfully'
         ]);
     }
 
@@ -78,6 +161,7 @@ class SpendController extends Controller
         $categoryName = $this->getCategoryName($spendDetail['category_id']);
 
         return [
+            'spend_detail_id' => $spendDetail['id'],
             'spend_category_id' => $spendDetail['category_id'],
             'spend_category_name' => $categoryName['name'],
             'spend_amount' => $spendDetail['amount']
