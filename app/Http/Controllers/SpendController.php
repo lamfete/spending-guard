@@ -22,13 +22,22 @@ class SpendController extends Controller
 		$this->middleware('jwt.auth', ['except' => ['authenticate']]);
 	}
 
-    public function index() {
-    	$spendHeaders = SpendHeader::all();
-    	return $spendHeaders;
+    public function index(Request $request) {
+    	// $spendHeaders = SpendHeader::all();
+    	// return $spendHeaders;
+
+        $limit = $request->input('limit')?$request->input('limit'):5;
+
+        $spendDetails = SpendDetail::where('user_id', 2)->paginate($limit);
+
+        $spendDetails->appends(array(
+            'limit' => $limit
+        ));
+
+        return Response::json($this->transformCollectionSpendDetailToIndex($spendDetails), 200);
     }
 
     public function show($id) {
-        //$spendHeaders = SpendHeader::where('user_id', $id)->get();
         $spendDetails = SpendDetail::where('user_id', $id)->get();
 
         if(!$spendDetails) {
@@ -95,11 +104,7 @@ class SpendController extends Controller
         //update spend_headers subtotal
         DB::table('spend_headers')
                     ->where('user_id', $request->user_id)
-                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
-                    /*->update([
-                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
-                        'updated_at' => $dateOnly
-                    ])*/
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)
                     ->decrement('subtotal', $amountDecrement);
 
         /*
@@ -114,11 +119,7 @@ class SpendController extends Controller
         //update spend_headers subtotal
         DB::table('spend_headers')
                     ->where('user_id', $request->user_id)
-                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
-                    /*->update([
-                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
-                        'updated_at' => $dateOnly
-                    ])*/
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)
                     ->increment('subtotal', $request->amount, ['updated_at' => \Carbon\Carbon::now()]);
 
         return Response::json([
@@ -139,11 +140,7 @@ class SpendController extends Controller
         //update spend_headers subtotal
         DB::table('spend_headers')
                     ->where('user_id', $request->user_id)
-                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
-                    /*->update([
-                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
-                        'updated_at' => $dateOnly
-                    ])*/
+                    ->where(DB::raw('DATE(`created_at`)'), $request->date)
                     ->decrement('subtotal', $amountDecrement, ['updated_at' => \Carbon\Carbon::now()]);
 
         spendDetail::destroy($id);
@@ -155,6 +152,23 @@ class SpendController extends Controller
 
     private function transformCollectionSpendDetail($spendDetails) {
         return array_map([$this, 'transformSpendDetail'], $spendDetails->toArray());
+    }
+
+    private function transformCollectionSpendDetailToIndex($spendDetails) {
+        // return array_map([$this, 'transformSpendDetail'], $spendDetails->toArray());
+        $spendDetailsArr = $spendDetails->toArray();
+
+        return [
+            'total' => $spendDetailsArr['total'],
+            'per_page' => intval($spendDetailsArr['per_page']),
+            'current_page' => $spendDetailsArr['current_page'],
+            'last_page' => $spendDetailsArr['last_page'],
+            'next_page_url' => $spendDetailsArr['next_page_url'],
+            'prev_page_url' => $spendDetailsArr['prev_page_url'],
+            'from' => $spendDetailsArr['from'],
+            'to' => $spendDetailsArr['to'],
+            'data' => array_map([$this, 'transformSpendDetail'], $spendDetailsArr['data'])
+        ];
     }
 
     private function transformSpendDetail($spendDetail) {
@@ -193,22 +207,4 @@ class SpendController extends Controller
         $SpendDetails = SpendDetail::where('user_id', $spendHeaderId)->get();  
         return $SpendDetails;      
     }
-
-    /*
-    public function authenticate(Request $request) {
-    	$credentials = $request->only('email', 'password');
-
-    	try {
-    		//verify the credentials and create a token for the user
-    		if(!$token = JWTAuth::attempt($credentials)) {
-    			return response()->json(['error' => 'Unauthorized'], 401);
-    		}
-    	} catch (JWTException $e) {
-    		//something went wrong
-    		return response()->json(['error' => 'could_not_create_token'], 500);
-    	}
-
-    	//if no errors are encountered we can return a JWT
-    	return response()->json(compact('token'));
-    }*/
 }
