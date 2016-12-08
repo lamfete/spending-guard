@@ -12,6 +12,6 @@ class SpendDetail extends Model
     	return $this->belongsTo('App\SpendHeader');
     }*/
     protected $fillable = [
-        'user_id', 'category_id', 'amount',
+        'user_id', 'category_id', 'body', 'amount',
     ];
 }

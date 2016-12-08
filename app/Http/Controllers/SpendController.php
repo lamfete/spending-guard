@@ -23,16 +23,26 @@ class SpendController extends Controller
 	}
 
     public function index(Request $request) {
-    	// $spendHeaders = SpendHeader::all();
-    	// return $spendHeaders;
-
+    	$searchTerm = $request->input('search');
         $limit = $request->input('limit')?$request->input('limit'):5;
 
-        $spendDetails = SpendDetail::where('user_id', 2)->paginate($limit);
+        if($searchTerm){
+            $spendDetails = SpendDetail::where('user_id', 2) //MASIH DI HARDCODE
+            ->where('body', 'LIKE', "%$searchTerm%")
+            ->paginate($limit);
 
-        $spendDetails->appends(array(
-            'limit' => $limit
-        ));
+            $spendDetails->appends(array(
+                'search' => $searchTerm,
+                'limit' => $limit
+            ));
+        }
+        else {
+            $spendDetails = SpendDetail::where('user_id', 2)->paginate($limit); //MASIH DI HARDCODE
+
+            $spendDetails->appends(array(
+                'limit' => $limit
+            ));
+        }
 
         return Response::json($this->transformCollectionSpendDetailToIndex($spendDetails), 200);
     }
@@ -55,7 +65,7 @@ class SpendController extends Controller
     }
 
     public function store(Request $request) {
-        if(!$request->category_id or !$request->amount or !$request->date) {
+        if(!$request->category_id or !$request->body or !$request->amount or !$request->date) {
             return Response::json([
                 'error' => [
                     'message' => 'Please provide data correctly'
@@ -67,15 +77,25 @@ class SpendController extends Controller
 
         $dateOnly = \Carbon\Carbon::now();
 
-        //update spend_headers subtotal
-        DB::table('spend_headers')
-                    ->where('user_id', $request->user_id)
-                    ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
-                    /*->update([
-                        // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
-                        'updated_at' => $dateOnly
-                    ])*/
-                    ->increment('subtotal', $request->amount, ['updated_at' => \Carbon\Carbon::now()]);
+        $spendHeader = SpendHeader::where('created_at', $dateOnly)->first();
+
+        if($spendHeader) {
+            $spendHeaderInsert = new SpendHeader;
+            $spendHeaderInsert->user_id = $request->user_id;
+            $spendHeaderInsert->subtotal = $request->amount;
+            $spendHeaderInsert->save();
+        }
+        else {
+            //update spend_headers subtotal
+            DB::table('spend_headers')
+                        ->where('user_id', $request->user_id)
+                        ->where(DB::raw('DATE(`created_at`)'), $request->date)//$dateOnly->toDateString())
+                        /*->update([
+                            // 'subtotal' => DB::raw('subtotal + ' $request->amount), 
+                            'updated_at' => $dateOnly
+                        ])*/
+                        ->increment('subtotal', $request->amount, ['updated_at' => \Carbon\Carbon::now()]);
+        }
 
         return Response::json([
             'message' => "Data created successfully",
@@ -84,7 +104,7 @@ class SpendController extends Controller
     }
 
     public function update(Request $request, $id) {
-        if(!$request->category_id or !$request->amount or !$request->date) {
+        if(!$request->category_id or !$request->body or !$request->amount or !$request->date) {
             return Response::json([
                 'error' => [
                     'message' => 'Please provide data correctly'
@@ -112,6 +132,7 @@ class SpendController extends Controller
         * update subtotal in spend_headers with updated amount
         *
         */        
+        $spendDetail->body = $request->body;
         $spendDetail->amount = $request->amount;
         $spendDetail->category_id = $request->category_id;
         $spendDetail->save();
@@ -178,6 +199,7 @@ class SpendController extends Controller
             'spend_detail_id' => $spendDetail['id'],
             'spend_category_id' => $spendDetail['category_id'],
             'spend_category_name' => $categoryName['name'],
+            'spend_body' => $spendDetail['body'],
             'spend_amount' => $spendDetail['amount']
         ];
         //return $categoryName[0]['name'];
